@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <title>Brasil UF 2024 - Mapa</title>
+
+  <!-- Leaflet CSS -->
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+    crossorigin=""
+  />
+
+  <style>
+    html, body {
+      height: 100%;
+      margin: 0;
+    }
+    #map {
+      width: 100%;
+      height: 100vh;
+    }
+    .leaflet-container {
+      background: #0b1020;
+    }
+  </style>
+</head>
+<body>
+  <div id="map"></div>
+
+  <!-- Leaflet JS -->
+  <script
+    src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+    integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+    crossorigin=""
+  ></script>
+
+  <!-- topojson-client para converter TopoJSON em GeoJSON -->
+  <script src="https://unpkg.com/topojson-client@3/dist/topojson-client.min.js"></script>
+
+  <script>
+    // URL do seu TopoJSON no GitHub Pages
+    const TOPOJSON_URL =
+      "https://euandrewbrito777.github.io/brasil-uf-2024/br_uf_2024_topojson.json";
+
+    // Cria o mapa
+    const map = L.map("map").setView([-15.8, -47.9], 4); // centro aproximado do Brasil
+
+    // Fundo básico (OpenStreetMap)
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      maxZoom: 18,
+      attribution: "&copy; OpenStreetMap contributors"
+    }).addTo(map);
+
+    // Função para carregar o TopoJSON
+    fetch(TOPOJSON_URL)
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error("Erro ao baixar TopoJSON: " + response.status);
+        }
+        return response.json();
+      })
+      .then((topology) => {
+        // Pega o primeiro objeto do TopoJSON (assumindo que só tem um)
+        const objectName = Object.keys(topology.objects)[0];
+        const geojson = topojson.feature(topology, topology.objects[objectName]);
+
+        const layer = L.geoJSON(geojson, {
+          style: {
+            color: "#ffffff",      // cor da borda
+            weight: 1.2,           // espessura da linha
+            fillColor: "#1f78b4",  // cor de preenchimento
+            fillOpacity: 0.6
+          },
+          onEachFeature: (feature, layer) => {
+            const sigla = feature.properties.SIGLA_UF || "";
+            const nome = feature.properties.NM_UF || "";
+            layer.bindPopup(`<b>${sigla}</b><br>${nome}`);
+          }
+        }).addTo(map);
+
+        map.fitBounds(layer.getBounds());
+      })
+      .catch((err) => {
+        console.error(err);
+        alert("Erro ao carregar o mapa. Veja o console para detalhes.");
+      });
+  </script>
+</body>
+</html>
